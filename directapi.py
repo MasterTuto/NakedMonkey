@@ -1,11 +1,11 @@
-from typing import Any, List
+from typing import Any, List, Tuple
 
 from credentials import API_KEY
 from logger import pprint
 from time import sleep
-from codeforces import CodeForces
+from codeforces import *
 import requests
-from random import choice
+from random import choice, choices
 import json
 import sys
 
@@ -71,23 +71,70 @@ class Telegram:
         
     def reply_to(self, who, message : str):
         self.send_message(reply_to_message=who, chat_id=who['chat']['id'], message=message)
+
+    def parse_message(self, message: str) -> Tuple[List[str], Tuple[int, int], str, int]:
+        rating : Tuple(int, int) = (-1, -1)
+        tags : List[str] = []
+        user = ""
+        quantity = 1
+
+        acc = ""
+        for entry in message.split(" "):
+            if len(entry.strip()) == 0: continue
+
+            if entry.startswith("r:"): #rating
+                entry = entry[2:]
+                if entry.count("-") == 0 and entry.isnumeric():
+                    rating = (int(entry), int(entry))
+                elif entry.count('-') == 1:
+                    (begin, end) = entry.split("-")
+                    begin = int(begin) if begin.isnumeric() else -1
+                    end = int(end) if end.isnumeric() else -1
+                    
+                    rating = (begin, end)
+            elif entry.startswith("n:"):
+                entry = entry[2:]
+                if entry.isnumeric():
+                    quantity = int(entry)
+            elif entry.startswith("@"):
+                user = entry[1:]
+            elif entry.startswith('"'):
+                acc += entry[1:] + " "
+            elif entry.endswith('"'):
+                acc += entry[:-1]
+                tags.append( acc )
+                acc = ""
+            else:
+                tags.append( entry )
+
+        return tags, rating, user, ( quantity if quantity > 0 else 1 )
+
+    
+    def beautify_problem(self, problem: Problem) -> str:
+        tags = ", ".join(problem.tags)
+        # return f"{problem.contest_id}/{problem.index}: {problem.name}\nRating: {problem.rating}\nTags: {tags}\n{problem.url}\n"
+        return f"{problem.contest_id}/{problem.index}: {problem.name}\nRating: {problem.rating}\n{problem.url}\n"
+    
+    def beautify_problems(self, problems: List[Problem]) -> str:
+        if len(problems) == 0: return "Nenhum problema encontrado :/"
+
+        result = f"{len(problems)}(s) problemas encontrados:\n\n"
+
+        return result + "\n".join( [self.beautify_problem(p) for p in problems] )
     
     def send_random_problem(self, message):
-        all_tags : List[str] = message['text'][5:].split()
-        tags = filter(lambda i: not i.isnumeric() and len(i.strip()) > 0, all_tags )
+        tags, rating, user, quantity = self.parse_message( message['text'][5:] )
         
-        ratings = list(filter( lambda x: x.isnumeric(), all_tags ))
-        rating = ratings[0] if len(ratings) > 0 else -1
-
-
-        list_of_problems = self.cf.get_problems(*tags, rating=int(rating))
+        list_of_problems = self.cf.get_problems(*tags, begin_rating=rating[0], end_rating=rating[1], user=user)
+        problems = choices( list_of_problems, k=min(quantity, len(list_of_problems)) )
         
-        problem = choice( list_of_problems ).url if len(list_of_problems) > 0 else "Nenhum problema encontrado :/"
+        problem_txt = self.beautify_problems( problems )
 
-        self.reply_to(message, problem)
+        self.reply_to(message, problem_txt)
 
     def work(self, update: dict) -> None:
         if self.typeof(update) == 'message':
+            print(f"{update['messag']['text']=}")
             if self.is_command( update ):
                 if update['message']['text'].startswith('/rand'):
                     self.send_random_problem(update['message'])
@@ -104,8 +151,11 @@ class Telegram:
 
 def main():
     bot = Telegram()
-    # bot.set_commands([("rand", "Manda uma questao aleatoria")])
-    bot.run()
+    print( bot.set_commands([
+        ("rand", "Manda uma questao aleatoria"),
+        ("start", "comeca uehkkkkk")
+    ]).json() )
+    # bot.run()
 
 if __name__ == "__main__":
     main()
