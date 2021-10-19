@@ -1,4 +1,4 @@
-from typing import Any, List, Tuple
+from typing import Any, List, Tuple, Union
 
 from credentials import API_KEY
 from logger import pprint
@@ -44,7 +44,20 @@ class Telegram:
 
         return requests.post(url, data=content)
     
-    def set_commands(self, commands : list) -> bool:
+    def get_commands(self, scope : Union[str, List[str]]):
+        url = self.base_url.format(method="getMyCommands")
+
+        scopes = [scope] if type(scope) == str else scope
+        
+        answers = []
+
+        for scope in scopes:
+            params = {"scope": {"type":  scope }}
+
+            answers.append( requests.get(url, json=params) )
+        return answers
+    
+    def set_commands(self, commands : list, scope: Union[str, List[str]]) -> bool:
         list_of_commands = [
             {"command": command_name, "description": description}
             for (command_name, description) in commands
@@ -52,7 +65,19 @@ class Telegram:
 
         url = self.base_url.format( method="setMyCommands" )
 
-        return requests.post( url, json=list_of_commands )
+        answers = []
+        scopes = [scope] if type(scope) == str else scope
+        for scope in scopes:
+            data = { "commands": list_of_commands, "scope": { "type": scope  } }
+
+            answers.append ( requests.post( url, json=data ) )
+
+        return answers if len(answers) > 1 else answers[0]
+
+
+    def delete_commands(self):
+        url = self.base_url.format(method="deleteMyCommands")
+        return requests.post( url )
 
     def typeof(self, update: dict) -> str:
         possibilities = ['message']
@@ -132,13 +157,43 @@ class Telegram:
 
         self.reply_to(message, problem_txt)
 
-    def work(self, update: dict) -> None:
-        if self.typeof(update) == 'message':
-            print(f"{update['messag']['text']=}")
-            if self.is_command( update ):
-                if update['message']['text'].startswith('/rand'):
-                    self.send_random_problem(update['message'])
+    def show_help(self, message):
+        help_message = (
+            "List of Commands:\n\n"
+            "/help - this help message\n\n"
+            "/rand - answers random codeforces question:\n"
+            "        any word means a tag, multi word tags must be in quotation marks\n"
+            "        r: specifies rating range ou exact rating\n"
+            "        n: specifies the number of questions to answer\n"
+            "        @ specifies what user to filter the questions they never submitted\n\n"
+            "/recommend - almost like /rand, except that it uses user data to recommend "
+            "a problem they should answer\n\n"
+            "/gen - generates a pdf file for a contest, given the difficulty:\n"
+            "        easy  = questions which rating *r* is ```800 <= r <= 1000 ```\n"
+            "        medium  = questions which rating *r* is ```1000 < r <= 1800 ```\n"
+            "        hard  = questions which rating *r* is ```1800 < r```\n"
+        )
+
+        self.reply_to(message, help_message)
+
+    def send_recommendation(self, message):
+        return self.reply_to(message, "vai pedir recomendacao sua mãe")
         
+
+    def work(self, update: dict) -> None:
+        commands = {
+            "rand": lambda message: self.send_random_problem(message),
+            "recommend": lambda message: self.send_recommendation(message),
+            "help": lambda message: self.show_help(message)
+        }
+
+        if self.typeof(update) == 'message':
+            if self.is_command( update ):
+                command = update['message']['text'].split(" ", 1)[0][1:].split("@", 1)[0]
+                
+                if command in commands:
+                    commands[command]( update['message'] )
+                    
     def run(self):
         last_update : int = 0
         while True:
@@ -148,14 +203,10 @@ class Telegram:
                 self.work(update)
                 last_update = update['update_id']
 
-
 def main():
     bot = Telegram()
-    print( bot.set_commands([
-        ("rand", "Manda uma questao aleatoria"),
-        ("start", "comeca uehkkkkk")
-    ]).json() )
-    # bot.run()
+
+    bot.run()
 
 if __name__ == "__main__":
     main()
