@@ -19,9 +19,9 @@ There is currently only 1 working command. But there are plans of adding two mor
   (filters the problems with the maximum (including) of 250 of rating), r:1100-1800 (well, you may have got already).
   * `@` indicates users to filter i.e. does not show problems you already submitted. E.g. @tourist.
 
-* `/rand`: Responds with random problem with given queryes, default config is n:1, which means it returns a single random problem.
+* `/rand`: Responds with random problem with given queryies, default config is n:1, which means it returns a single random problem.
 * `/recommend`: * not yet implemented *, but supposedly will recommend problems based on your submissions.
-* `/gen`: * not yet implemented *, but supposedly will generate a PDF file containig _n_ problems, of _W_ tags with _R_ ratings which _AT_ users haven't answered.
+* `/gen`: * not yet implemented * , but supposedly will generate a PDF file containig _n_ problems, of _W_ tags with _R_ ratings which _AT_ users haven't answered.
 
 ## How can I use it?
 
