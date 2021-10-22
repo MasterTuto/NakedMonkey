@@ -5,11 +5,11 @@
 
 ## Is it hosted somewhere?
 
-No, you may either run it on your computer or host somewhere. It also currently does not support Web Hooks, it ocasionally sends a query to Telegram API to get updates.
+No, you may either run it on your computer or host somewhere else. It also currently does not support Web Hooks, it ocasionally sends a query to Telegram API to get updates.
 
 ## How can I use it?
 
-There are currently only 1 working command. But there are plans of two more. I will describe them below:
+There is currently only 1 working command. But there are plans of adding two more. I will describe them below:
 
 * First things first: Any of the commands below can be used with the same parameters, but the behavior may be different. The parameters are:  
   * `any word` well, any word is considered a tag. Tags with multiple words must be in parenthesis. E.g. dp implementation "binary search"
@@ -29,7 +29,7 @@ run `directapi.py`
 
 ## Can I see it working?
 
-Of course, here is a print:
+Of course, here is a screenshot:
 
 <img src="https://github.com/MasterTuto/NakedMonkey/blob/main/imagem_2021-10-22_115113.png?raw=true" width="400" />
 
